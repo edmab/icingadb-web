@@ -8,6 +8,7 @@ use Exception;
 use Generator;
 use GuzzleHttp\Psr7\ServerRequest;
 use Icinga\Application\Config;
+use Icinga\Application\Hook;
 use Icinga\Application\Icinga;
 use Icinga\Application\Logger;
 use Icinga\Application\Version;
@@ -562,5 +563,9 @@ class Controller extends CompatController
         Icinga::app()->getFrontController()
             ->getPlugin('Zend_Controller_Plugin_ErrorHandler')
             ->setErrorHandlerModule('icingadb');
+
+        if (Hook::has('ticket')) {
+            $this->view->tickets = Hook::first('ticket');
+        }
     }
 }
