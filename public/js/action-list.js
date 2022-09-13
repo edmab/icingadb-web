@@ -209,15 +209,27 @@
                     activeItems.forEach(item => item.classList.remove('active'));
                     toActiveItem = activeItems[activeItems.length -1].nextElementSibling;
 
+                    if (! toActiveItem || toActiveItem.classList.contains('show-more')) {
+                        toActiveItem = list.firstChild;
+                    }
+
                     break;
                 case event.key === 'ArrowUp':
                     activeItems.forEach(item => item.classList.remove('active'));
                     toActiveItem = activeItems[0].previousElementSibling;
 
+                    if (! toActiveItem) {
+                        toActiveItem = list.lastChild;
+
+                        if (toActiveItem.classList.contains('show-more')) {
+                            toActiveItem = toActiveItem.previousElementSibling;
+                        }
+                    }
+
                     break;
             }
 
-            // $currentActiveItems already contain the first/last element of the list and have no prev/next element
+            // $currentActiveItems while multiselect already contains the first/last item of the list and has no prev/next item
             if (! toActiveItem) {
                 return;
             }
