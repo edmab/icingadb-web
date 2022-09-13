@@ -23,6 +23,10 @@
             this.on('close-column', this.onColumnClose, this);
 
             this.on('rendered', '.container', this.onRendered, this);
+
+            this.on('keydown','.container', this.onKeyDown, this); //TODO change selector
+
+            this.lastActivatedItem = null;
         }
 
         onClick = function (event) {
@@ -125,6 +129,96 @@
                     url, _this.icinga.loader.getLinkTargetFor($target)
                 );
             }
+        }
+
+        onKeyDown = function (event) {
+            var _this = event.data.self;
+            let list = document.querySelector('.action-list');
+            let activeItems = list.querySelectorAll('[data-action-item].active');
+            let hasMultiSelectUrl = list.hasAttribute('data-icinga-multiselect-url');
+            let toActiveItem = null;
+            let url;
+
+            if (event.ctrlKey && (event.key === 'A' || event.key === 'a')) {
+                let continueWith = document.querySelector('.continue-with').querySelector('[href]');
+                if (continueWith) {
+                    activeItems.forEach(item => item.classList.remove('active'));
+
+                    url = continueWith.getAttribute('href');
+                    _this.icinga.loader.loadUrl(
+                        url, _this.icinga.loader.getLinkTargetFor($(continueWith))
+                    );
+                }
+
+                return;
+            }
+
+            if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+                return
+            }
+
+            switch (true) {
+                case activeItems.length === 0:
+                    toActiveItem = event.key === 'ArrowDown' ? list.firstChild : list.lastChild;
+                    break;
+                case hasMultiSelectUrl && event.shiftKey && event.key === 'ArrowDown':
+                    if (activeItems.length === 1) {
+                        toActiveItem = activeItems[0].nextElementSibling;
+                    } else if (this.lastActivatedItem === activeItems[0]) {
+                        this.lastActivatedItem.classList.remove('active');
+                        toActiveItem = activeItems[1];
+                    } else {
+                        toActiveItem = activeItems[activeItems.length -1].nextElementSibling;
+                    }
+
+                    break;
+                case hasMultiSelectUrl && event.shiftKey && event.key === 'ArrowUp':
+                    if (activeItems.length === 1) {
+                        toActiveItem = activeItems[0].previousElementSibling;
+                    } else if (this.lastActivatedItem === activeItems[activeItems.length -1]) {
+                        this.lastActivatedItem.classList.remove('active');
+                        toActiveItem = activeItems[activeItems.length -2];
+                    } else {
+                        toActiveItem = activeItems[0].previousElementSibling;
+                    }
+
+                    break;
+                case event.key === 'ArrowDown':
+                    activeItems.forEach(item => item.classList.remove('active'));
+                    toActiveItem = activeItems[activeItems.length -1].nextElementSibling;
+
+                    break;
+                case event.key === 'ArrowUp':
+                    activeItems.forEach(item => item.classList.remove('active'));
+                    toActiveItem = activeItems[0].previousElementSibling;
+
+                    break;
+            }
+
+            // $currentActiveItems already contain the first/last element of the list and have no prev/next element
+            if (! toActiveItem) {
+                return;
+            }
+
+            toActiveItem.classList.add('active');
+            this.lastActivatedItem = toActiveItem;
+
+            activeItems = list.querySelectorAll('[data-action-item].active');
+
+            if (activeItems.length > 1) {
+                let filters = [];
+                activeItems.forEach(item => {
+                    filters.push(item.getAttribute('data-icinga-multiselect-filter'));
+                });
+
+                url = list.getAttribute('data-icinga-multiselect-url') + '?' + filters.join('|');
+            } else {
+                url = toActiveItem.querySelector('[href]').getAttribute('href');
+            }
+
+            _this.icinga.loader.loadUrl(
+                url, _this.icinga.loader.getLinkTargetFor($(toActiveItem))
+            );
         }
 
         onColumnClose = function (event) {
